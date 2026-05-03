@@ -1,0 +1,63 @@
+At Sigma, our GTM stack is our product's first and most important proving ground. The Director, GTM Architect is the lead architect of our revenue engine — responsible for the technical design, integration logic, and data integrity of the entire GTM ecosystem.
+
+This is not a traditional ops role. We're looking for a builder-first leader: someone who views the tech stack not as a collection of apps, but as a scalable, automated platform for growth. Reporting directly to our VP of Revenue Operations, you'll define the architectural strategy for how Sigma goes to market — owning the technical vision and translating it into the systems, integrations, and automation that power every stage of our revenue motion.
+
+What You'll Own
+
+GTM System Architecture
+
+Design and maintain the end-to-end architecture of the GTM stack (Sigma, Salesforce, Clay, Outreach, LeanData, Zoominfo, and others), ensuring systems are extensible, resilient, and aligned to revenue strategy.
+Architect signal-based lead and account routing, territory management, and opportunity orchestration — ensuring the right signals reach the right reps at the right time.
+Partner with Data Engineering to build internal, Sigma-powered replacements for legacy SaaS tools, migrating logic into the data warehouse where it delivers more flexibility and lower cost. We call this "SaaS Takeout" — systematically replacing point solutions with composable, warehouse-native workflows.
+
+
+Salesforce & Enrichment Platform Strategy
+
+Own the Salesforce instance as a strategic asset. Design custom objects, flows, and integrations built for long-term scalability — not short-term patches.
+Lead the design of advanced outbound and enrichment workflows (Clay), building multi-source data waterfalls that give our SDR and AE teams a measurable competitive advantage.
+Evaluate and evolve enrichment and orchestration tooling as the landscape shifts, ensuring we're always leveraging best-in-class capabilities rather than locked into a single vendor.
+
+
+The "Sigma on Sigma" Vision
+
+Become the resident expert on using Sigma to power our own GTM motion. Today, that means building live dashboards that replace static reports and embedding Sigma into operational workflows. Tomorrow, it means using Sigma as the intelligence layer that informs routing logic, territory design, and pipeline strategy.
+Identify and build new internal use cases that showcase what's possible when a BI tool is treated as infrastructure, not just reporting.
+
+
+Data Governance & Signal Activation
+
+Ensure high-integrity data pipelines feed every GTM system. Own the logic for enrichment, de-duplication, and firmographic accuracy in close partnership with Data Engineering.
+Translate GTM strategy into automated, signal-driven workflows — ensuring intent data, product usage signals, and firmographics trigger the right actions across the stack.
+
+
+Tech Stack ROI & Vendor Management
+
+Rigorously evaluate the ROI of every tool in the stack. Identify overlap, lead migrations, and sunset redundant technologies with a clear business case.
+Own technical vendor relationships and contract negotiations for all GTM platforms, ensuring the stack evolves alongside business needs.
+
+
+Who You Are
+
+Systems Designer: You think in architectures, not apps. You understand how a change in an enrichment waterfall impacts a Salesforce report, a downstream dashboard, and a rep's daily workflow.
+Data-First Thinker: You believe a clean data warehouse is the foundation of a successful GTM motion. You're comfortable in SQL and energized by collaborating with Data Engineers on complex schemas.
+High-Velocity Operator: You thrive in fast-paced environments where today's solution must also be next year's scalable answer.
+Builder by Default: You'd rather build the elegant solution than buy the convenient one.
+
+
+Required Qualifications
+
+8+ years of experience in GTM Systems, Revenue Architecture, or Sales/Revenue Operations Technology.
+Deep, hands-on expertise in Salesforce at an Admin or Architect level (Flows, CPQ, custom objects, integrations).
+Strong experience designing enrichment and outbound automation workflows (Clay, or comparable platforms).
+Hands-on experience deploying LLM-powered automation and AI-native tools in a GTM context — not just prototypes, but workflows running in production that measurably impact pipeline or efficiency.
+Proficiency with modern BI tools (Sigma strongly preferred)
+Ability to partner effectively with Sales, Marketing, Data, and Engineering leaders to define and execute a unified technical roadmap.
+Proven experience managing and developing a team of technical professionals (analysts, admins, contractors), including setting standards, running prioritization, and balancing hands-on building with people leadership.
+
+
+Preferred Qualifications
+
+Experience with LeanData, Outreach, LeadIQ, ZoomInfo, or 6sense.
+Active involvement in the RevOps or GTM systems community (writing, speaking, mentoring, or open-source contribution).
+Experience leading or mentoring technical ops professionals, including Salesforce admins and analysts.
+
