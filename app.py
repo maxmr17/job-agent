@@ -64,8 +64,19 @@ span[translate="no"] {
 }
 
 /* ── Sidebar ───────────────────────────────────────────────────────────── */
-section[data-testid="stSidebar"] {
+section[data-testid="stSidebar"],
+section[data-testid="stSidebar"] > div,
+section[data-testid="stSidebar"] > div > div,
+section[data-testid="stSidebar"] > div > div > div,
+section[data-testid="stSidebar"] > div > div > div > div,
+section[data-testid="stSidebar"] > div > div > div > div > div,
+[data-testid="stSidebarContent"],
+[data-testid="stSidebarHeader"],
+[data-testid="stSidebarUserContent"] {
     background: #0f172a !important;
+    background-color: #0f172a !important;
+}
+section[data-testid="stSidebar"] {
     border-right: none !important;
     box-shadow: 1px 0 0 rgba(255,255,255,0.04) !important;
 }
@@ -74,64 +85,78 @@ section[data-testid="stSidebar"] p,
 section[data-testid="stSidebar"] span,
 section[data-testid="stSidebar"] label { color: #94a3b8 !important; }
 
-/* ── Sidebar nav: use data-baseweb="radio" which Streamlit always sets ────── */
-/* Force the visual radio mark (circle) to be tiny/invisible — don't hide its parent */
-section[data-testid="stSidebar"] [data-baseweb="radio"] [class*="RadioMarkOuter"],
-section[data-testid="stSidebar"] [data-baseweb="radio"] > div:first-child {
-    width: 0 !important;
-    height: 0 !important;
-    min-width: 0 !important;
-    overflow: hidden !important;
-    flex-shrink: 0 !important;
-    margin: 0 !important;
-}
-/* Each option row */
-section[data-testid="stSidebar"] [data-baseweb="radio"] {
-    padding: 9px 16px !important;
-    border-radius: 8px !important;
-    font-size: 13.5px !important;
-    font-weight: 500 !important;
-    margin: 1px 0 !important;
-    cursor: pointer !important;
-    transition: background 0.15s ease, color 0.15s ease !important;
-    color: #94a3b8 !important;
-    border-left: 2px solid transparent !important;
-    display: flex !important;
-    align-items: center !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+/* ── Sidebar nav buttons (inactive) ───────────────────────────────────────── */
+section[data-testid="stSidebar"] div.stButton > button {
     background: transparent !important;
-}
-/* Force ALL text nodes / emotion-styled divs inside the row to be visible */
-section[data-testid="stSidebar"] [data-baseweb="radio"] p,
-section[data-testid="stSidebar"] [data-baseweb="radio"] span,
-section[data-testid="stSidebar"] [data-baseweb="radio"] div {
     color: #94a3b8 !important;
-    visibility: visible !important;
+    border: none !important;
+    border-left: 2px solid transparent !important;
+    border-radius: 8px !important;
+    text-align: center !important;
+    justify-content: center !important;
+    font-weight: 500 !important;
+    font-size: 13.5px !important;
+    padding: 9px 16px !important;
+    margin: 1px 0 !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    letter-spacing: normal !important;
+    transform: none !important;
+    line-height: 1.4 !important;
+}
+section[data-testid="stSidebar"] div.stButton > button:hover {
+    background: rgba(79,70,229,0.12) !important;
+    color: #a5b4fc !important;
+    border-left-color: rgba(99,102,241,0.5) !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* ── Sidebar nav active item (rendered as markdown div) ───────────────────── */
+.sidebar-nav-active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 9px 16px;
+    margin: 1px 0;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #a5b4fc;
+    background: rgba(79,70,229,0.18);
+    box-shadow: inset 2px 0 0 #6366f1;
+}
+
+/* ── Sign Out button override (also in sidebar, should look distinct) ────── */
+section[data-testid="stSidebar"] div.stButton > button[data-testid="stBaseButton-secondary"]:last-of-type {
+    color: #64748b !important;
+    font-size: 13px !important;
+    justify-content: center !important;
+    border-top: 1px solid rgba(255,255,255,0.06) !important;
+    border-left: none !important;
+    border-radius: 6px !important;
+    margin-top: 4px !important;
+}
+section[data-testid="stSidebar"] div.stButton > button[data-testid="stBaseButton-secondary"]:last-of-type:hover {
+    color: #f87171 !important;
+    background: rgba(248,113,113,0.08) !important;
+    border-left: none !important;
+}
+
+/* ── Sidebar expand button (shown when sidebar is collapsed) ──────────────── */
+button[data-testid="stExpandSidebarButton"] {
+    background: #1e293b !important;
+    color: #a5b4fc !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    border-radius: 0 8px 8px 0 !important;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.3) !important;
     opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: all !important;
 }
-/* Hover state */
-section[data-testid="stSidebar"] [data-baseweb="radio"]:hover {
-    background: rgba(255,255,255,0.06) !important;
-    color: #e2e8f0 !important;
-    border-left-color: rgba(99,102,241,0.4) !important;
-}
-section[data-testid="stSidebar"] [data-baseweb="radio"]:hover p,
-section[data-testid="stSidebar"] [data-baseweb="radio"]:hover span,
-section[data-testid="stSidebar"] [data-baseweb="radio"]:hover div {
-    color: #e2e8f0 !important;
-}
-/* Active / selected state (radio input is checked) */
-section[data-testid="stSidebar"] [data-baseweb="radio"]:has(input:checked) {
-    background: rgba(79,70,229,0.15) !important;
-    color: #a5b4fc !important;
-    border-left-color: #6366f1 !important;
-}
-section[data-testid="stSidebar"] [data-baseweb="radio"]:has(input:checked) p,
-section[data-testid="stSidebar"] [data-baseweb="radio"]:has(input:checked) span,
-section[data-testid="stSidebar"] [data-baseweb="radio"]:has(input:checked) div {
-    color: #a5b4fc !important;
-    font-weight: 600 !important;
+button[data-testid="stExpandSidebarButton"]:hover {
+    background: #334155 !important;
+    color: #c7d2fe !important;
 }
 
 /* ── Buttons ───────────────────────────────────────────────────────────── */
@@ -190,6 +215,34 @@ div.stDownloadButton > button:hover {
 .stTextArea textarea:focus, .stTextInput input:focus {
     border-color: #4f46e5 !important;
     box-shadow: 0 0 0 3px rgba(79,70,229,0.1) !important;
+}
+
+/* ── Password toggle (eye) button ──────────────────────────────────────── */
+/* Streamlit renders the show/hide eye inside .stTextInput, outside div.stButton */
+.stTextInput > div > div > button,
+.stTextInput [data-testid*="BaseButton"],
+[data-testid="stTextInputRootElement"] button {
+    background: transparent !important;
+    color: #64748b !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: auto !important;
+    min-width: unset !important;
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+    font-size: 16px !important;
+    font-weight: normal !important;
+    letter-spacing: 0 !important;
+    transform: none !important;
+    transition: color 0.15s !important;
+}
+.stTextInput > div > div > button:hover,
+.stTextInput [data-testid*="BaseButton"]:hover,
+[data-testid="stTextInputRootElement"] button:hover {
+    color: #4f46e5 !important;
+    background: rgba(79,70,229,0.08) !important;
+    transform: none !important;
+    box-shadow: none !important;
 }
 
 /* ── File uploader ─────────────────────────────────────────────────────── */
@@ -314,6 +367,90 @@ hr {
     border-radius: 10px !important;
     border: 1.5px solid #e2e8f0 !important;
     background: #fff !important;
+}
+/* Selectbox / Multiselect: force light backgrounds throughout */
+[data-baseweb="select"] > div:first-child {
+    background: #fff !important;
+    border-color: #e2e8f0 !important;
+    border-radius: 10px !important;
+}
+[data-baseweb="popover"],
+[data-baseweb="menu"],
+[data-baseweb="popover"] ul {
+    background: #fff !important;
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+}
+[data-baseweb="menu"] li,
+[data-baseweb="menu"] [role="option"] {
+    background: #fff !important;
+    color: #1e293b !important;
+}
+[data-baseweb="menu"] li:hover,
+[data-baseweb="menu"] [role="option"]:hover,
+[data-baseweb="menu"] [aria-selected="true"] {
+    background: #eff6ff !important;
+    color: #4f46e5 !important;
+}
+/* Multiselect tags */
+[data-baseweb="tag"] {
+    background: #eef2ff !important;
+    color: #4f46e5 !important;
+    border-color: #c7d2fe !important;
+}
+[data-baseweb="tag"] span { color: #4f46e5 !important; }
+/* Multiselect clear/remove button on tags */
+[data-baseweb="tag"] button {
+    color: #6366f1 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: auto !important;
+    min-width: unset !important;
+    padding: 0 !important;
+    font-size: 12px !important;
+    transform: none !important;
+    letter-spacing: 0 !important;
+}
+
+/* ── Slider ─────────────────────────────────────────────────────────────── */
+[data-testid="stSlider"] [data-testid="stSliderThumbValue"],
+[data-testid="stSlider"] output,
+[data-testid="stSlider"] p {
+    color: #334155 !important;
+}
+[data-testid="stSlider"] [role="slider"] {
+    background: #4f46e5 !important;
+    border-color: #4f46e5 !important;
+}
+
+/* ── Forms (Security / Danger Zone backgrounds) ──────────────────────────── */
+[data-testid="stForm"] {
+    background: #fff !important;
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    padding: 16px 20px !important;
+}
+/* Form submit buttons — primary */
+[data-testid="stFormSubmitButton"] > button,
+[data-testid="stBaseButton-primaryFormSubmit"],
+button[kind="primaryFormSubmit"] {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    padding: 0.65rem 1.8rem !important;
+    width: 100% !important;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.28) !important;
+    cursor: pointer !important;
+}
+/* Danger Zone delete button — keep it red */
+[data-testid="stForm"] [data-testid="stFormSubmitButton"] > button[kind="primary"],
+[data-testid="stForm"] [data-testid*="danger"] > button {
+    background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%) !important;
 }
 
 /* ── Dataframe ─────────────────────────────────────────────────────────── */
@@ -1817,12 +1954,30 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    # Navigation
-    page = st.radio(
-        "",
-        ["⚡  Generate", "📊  Dashboard", "💼  Jobs", "⚙️  Account"],
-        label_visibility="collapsed",
-    )
+    # ── Navigation ────────────────────────────────────────────────────────
+    # Native st.button() per nav item — guaranteed clickable, no JS needed.
+    # Active item is a styled markdown div (non-clickable); inactive = button.
+    _NAV_ITEMS = [
+        ("⚡  Generate",   "Generate"),
+        ("📊  Dashboard",  "Dashboard"),
+        ("💼  Jobs",       "Jobs"),
+        ("⚙️  Account",    "Account"),
+    ]
+    if "page" not in st.session_state:
+        st.session_state["page"] = "Generate"
+
+    for _label, _key in _NAV_ITEMS:
+        if st.session_state["page"] == _key:
+            st.markdown(
+                f'<div class="sidebar-nav-active">{_label}</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            if st.button(_label, key=f"nav_{_key}", use_container_width=True):
+                st.session_state["page"] = _key
+                st.rerun()
+
+    page = st.session_state["page"]
 
     # User card + stats
     _app_count = db.application_count(_user_id)
@@ -1966,12 +2121,32 @@ if "Generate" in page:
                     placeholder="Paste the full job description here — the more detail, the better the output…",
                     label_visibility="collapsed",
                 )
+                if job_description and job_description.strip():
+                    _jd_words = len(job_description.split())
+                    _jd_color = "#15803d" if _jd_words >= 50 else "#b45309"
+                    _jd_bg    = "#f0fdf4" if _jd_words >= 50 else "#fefce8"
+                    _jd_bdr   = "#86efac" if _jd_words >= 50 else "#fde68a"
+                    _jd_icon  = "✓" if _jd_words >= 50 else "⚠"
+                    _jd_note  = "ready to generate" if _jd_words >= 50 else "try pasting more of the posting for best results"
+                    st.markdown(
+                        f'<div style="font-size:12.5px;color:{_jd_color};background:{_jd_bg};'
+                        f'border:1px solid {_jd_bdr};border-radius:8px;padding:7px 12px;margin-top:4px;">'
+                        f'{_jd_icon} {_jd_words:,} words detected — {_jd_note}.</div>',
+                        unsafe_allow_html=True,
+                    )
             else:
                 job_url = st.text_input(
                     "Job URL",
                     placeholder="https://jobs.lever.co/company/role-id",
                     label_visibility="collapsed",
                 )
+                if job_url and job_url.strip():
+                    st.markdown(
+                        '<div style="font-size:12.5px;color:#15803d;background:#f0fdf4;'
+                        'border:1px solid #86efac;border-radius:8px;padding:7px 12px;margin-top:4px;">'
+                        '✓ URL detected — job description will be fetched automatically when you generate.</div>',
+                        unsafe_allow_html=True,
+                    )
 
     with right_col:
         # Step 3 — Recruiter (optional)
@@ -2032,6 +2207,15 @@ if "Generate" in page:
                         st.stop()
                     with st.spinner("Fetching job posting…"):
                         job_description = extract_job_from_url(job_url)
+                    # Guard: require at least 50 meaningful words (error pages / nav boilerplate fail this)
+                    _jd_word_count = len((job_description or "").split())
+                    if _jd_word_count < 50:
+                        st.error(
+                            "⚠️ No job description could be scraped from that URL — "
+                            "the page may require a login or block scrapers. "
+                            "Please copy and paste the job description text directly using **Paste Text** mode."
+                        )
+                        st.stop()
 
                 if not resume_text:
                     st.error("Upload a resume or enable 'Use saved resume'.")
