@@ -932,16 +932,18 @@ connection in a way that feels like a warm intro, not a calculated name-drop.
                 "role": "system",
                 "content": (
                     "You are a LinkedIn outreach specialist who knows what gets responses. "
-                    "Design a writing brief for a LinkedIn InMail — NOT the message itself. "
-                    "Platform reality: recruiters see 50+ messages/day. Generic = ignored. "
-                    "The only messages that get responses are specific, peer-level, and short. "
+                    "Design a writing brief for a LinkedIn message from a candidate to a hiring manager or recruiter — NOT the message itself. "
+                    "Platform reality: hiring teams see 50+ messages/day. Generic = ignored. "
+                    "The only messages that get responses are specific, confident, and short. "
+                    "The candidate is reaching out about a real opportunity — don't obscure that. "
+                    "Lead with genuine value and a direct ask, not a disguised cold pitch. "
                     "Return ONLY valid JSON."
                 ),
             },
             {
                 "role": "user",
                 "content": f"""
-Design the optimal LinkedIn outreach brief for this candidate.
+Design the optimal LinkedIn outreach brief for this candidate reaching out to a hiring manager or recruiter.
 
 COMPANY: {cl_strategy.get("company_name")}
 CULTURE: {cl_strategy.get("company_culture_signals")}
@@ -949,11 +951,11 @@ CANDIDATE ANGLE: {cl_strategy.get("candidate_narrative_angle")}
 {personalization_section}
 Return JSON:
 {{
-  "platform_context": "string — format guidance (e.g. 'Short InMail under 90 words, peer-to-peer tone')",
+  "platform_context": "string — format guidance (e.g. 'Short message under 90 words, direct candidate-to-recruiter tone')",
   "opening_line": "string — the exact first sentence. MUST reference something specific from the JD or the shared connection. MUST NOT be: 'I came across your role', 'I noticed you're hiring', or any generic opener. The reader must feel like you wrote this specifically for them.",
   "value_hook": "string — one sentence on the specific, concrete value this candidate brings to THIS company right now, grounded in a real achievement",
-  "conversation_angle": "string — what makes this feel like a peer reaching out, not an applicant applying",
-  "cta": "string — a single, low-friction call to action",
+  "conversation_angle": "string — how to frame this as a confident candidate directly expressing interest, leading with value rather than desperation — honest about the context, not pretending it isn't a job inquiry",
+  "cta": "string — a single, low-friction call to action (e.g. a brief call or chat about the role)",
   "tone_guidance": "string — exact tone",
   "max_words": 90,
   "what_to_avoid": ["phrases that make LinkedIn messages feel generic, desperate, or AI-generated"]
@@ -1000,11 +1002,12 @@ The hook must feel like a genuine observation — not like you researched their 
             {
                 "role": "system",
                 "content": (
-                    "You write LinkedIn messages that get responses. "
+                    "You write LinkedIn messages from candidates to hiring managers and recruiters that get responses. "
                     "You follow the brief exactly. Every word is deliberate. "
                     "You never use generic openers, corporate speak, or AI-sounding phrases. "
-                    "The message must read like it was written by a sharp, confident human "
-                    "who is interested in a conversation — not desperate for a job."
+                    "The message is honest: this is a candidate expressing direct interest in a role. "
+                    "It leads with real value and a confident ask — not a disguised cold pitch. "
+                    "It reads like a sharp, self-assured professional reaching out, not someone begging for a chance."
                 ),
             },
             {
@@ -1059,10 +1062,11 @@ def _polish_linkedin_message(
             {
                 "role": "system",
                 "content": (
-                    "You are a ruthless editor specialized in professional outreach. "
+                    "You are a ruthless editor specialized in candidate outreach to hiring managers and recruiters. "
                     "Cut every unnecessary word. "
                     "Make the message feel more human and less like a template. "
-                    "If anything sounds like it was written by AI, rewrite it."
+                    "The candidate is reaching out about a real role — don't soften or obscure that. "
+                    "If anything sounds like it was written by AI or reads as evasive about intent, rewrite it."
                 ),
             },
             {
