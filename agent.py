@@ -1745,16 +1745,17 @@ def _generate_follow_up_email(
             {
                 "role": "system",
                 "content": (
-                    "You write follow-up emails that actually get responses. "
+                    "You write follow-up emails from candidates to hiring managers and people teams that actually get responses. "
                     "The key: add new value rather than just 'checking in'. "
-                    "Short (under 80 words), specific, confident — never desperate. "
+                    "The candidate has applied and is following up — be honest about that context. "
+                    "Short (under 80 words), specific, confident — never desperate or evasive about intent. "
                     "Return ONLY valid JSON."
                 ),
             },
             {
                 "role": "user",
                 "content": f"""
-Write a follow-up email to send 7 days after applying to {company_name}.
+Write a follow-up email from a candidate to a hiring manager or people team, to send 7 days after applying to {company_name}.
 
 CONTEXT:
 - Culture: {cl_strategy.get("company_culture_signals", "")}
@@ -1767,8 +1768,8 @@ RULES:
 - Body: under 80 words
 - Must add a fresh hook or new value — NOT just "I wanted to follow up"
 - Reference something specific about the role or company
-- Low-friction CTA
-- Confident and peer-level, not deferential
+- Low-friction CTA (e.g. a quick call to discuss the role)
+- Confident and direct — the candidate is genuinely interested and expressing it clearly, without being deferential or grovelling
 - Sign off: Max
 
 Return JSON:
