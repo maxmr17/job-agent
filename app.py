@@ -1,6 +1,7 @@
 import base64
 import datetime
 import hashlib
+import html
 import json
 import re
 from io import BytesIO
@@ -1593,7 +1594,7 @@ def render_result(result: dict, key_suffix: str = "") -> None:
             st.markdown(
                 f'<div class="section-card section-card-indigo" style="font-size:14px;line-height:1.85;'
                 f'color:#1e293b;white-space:pre-wrap;font-family:inherit;">'
-                f'{cover_letter}</div>',
+                f'{html.escape(cover_letter)}</div>',
                 unsafe_allow_html=True,
             )
 
