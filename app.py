@@ -1508,23 +1508,22 @@ def render_result(result: dict, key_suffix: str = "") -> None:
                                 )
                         st.markdown("<div style='margin-bottom:12px;'></div>", unsafe_allow_html=True)
 
-            skills = tailored.get("skills") or []
-            if skills:
-                st.markdown(
-                    '<div style="margin:8px 0 6px;">'
-                    + "".join(f'<span class="tag">{s}</span>' for s in skills)
-                    + "</div>",
-                    unsafe_allow_html=True,
-                )
-
             st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
             try:
                 resume_style = st.session_state.get("resume_style", {})
                 resume_pdf = export_resume_pdf(tailored, style_params=resume_style)
+                pdf_bytes = resume_pdf.getvalue()
+                b64_pdf = base64.b64encode(pdf_bytes).decode()
+                st.markdown(
+                    f'<iframe src="data:application/pdf;base64,{b64_pdf}" width="100%" height="820"'
+                    f' style="border:1.5px solid #e8ecf3;border-radius:10px;display:block;"></iframe>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
                 candidate = tailored.get("candidate_name", "resume").replace(" ", "_").lower()
                 st.download_button(
                     "⬇️  Download Tailored Resume (1-page PDF)",
-                    data=resume_pdf,
+                    data=pdf_bytes,
                     file_name=f"{candidate}_tailored_resume.pdf",
                     mime="application/pdf",
                     key=f"resume_dl_{key_suffix}",
