@@ -1786,6 +1786,11 @@ def _generate_interview_prep(
                     "CRITICAL: Every suggested answer must draw from the candidate's ACTUAL experience. "
                     "Never suggest fabricating or embellishing examples. "
                     "Answers grounded in real, specific evidence beat rehearsed-sounding ones every time. "
+                    "\n\nFor the elevator_pitch specifically: write a spoken narrative, not a résumé recitation. "
+                    "It must follow a clear 5-part arc — career positioning, practitioner origin, "
+                    "strategic evolution, current role with specific evidence, and a genuine company-specific close. "
+                    "Tone: conversational, confident, self-aware. No HR-speak. No 'passionate about'. "
+                    "Numbers embedded naturally in sentences, not listed. "
                     "Return ONLY valid JSON."
                 ),
             },
@@ -1841,7 +1846,7 @@ Return JSON:
       "why_powerful": "string — what this signals about the candidate"
     }}
   ],
-  "elevator_pitch": "string — a 30-second 'tell me about yourself' answer tailored to THIS role, using the candidate's real background. Write it as prose the candidate can say out loud.",
+  "elevator_pitch": "string — A spoken 'tell me about yourself' answer. Must follow this exact 5-part arc, written as flowing prose the candidate can say out loud in ~90 seconds:\\n\\n1. POSITIONING HOOK: Open with a career arc summary and the through-line — what has stayed consistent across every role. Frame it around the value the candidate sits between (e.g. clients and technical teams, strategy and execution). One to two sentences. Do NOT open with 'I am a...' or a job title.\\n\\n2. PRACTITIONER ORIGIN: Briefly establish where they started — the hands-on, technical foundation. This builds credibility and shows they earned their strategic perspective. One sentence. Past tense.\\n\\n3. CAREER EVOLUTION: Describe the natural shift toward more strategic or higher-leverage work — framed as something that became more interesting, not as a promotion checklist. One to two sentences. Use 'shifted toward' or 'over time' language.\\n\\n4. CURRENT ROLE + EVIDENCE: Describe the current or most recent role with concrete specifics — team size, customer count, ARR, named client examples, types of problems solved. Embed numbers naturally in sentences, never as a list. Include both the client-facing and the systems/process-building dimension if applicable. Two to three sentences.\\n\\n5. COMPANY-SPECIFIC CLOSE: End with a genuine, specific reason this candidate is interested in THIS company and THIS role. Reference what the JD is actually asking for and connect it directly to what the candidate has been doing. Start with 'What draws me to this conversation is...' or equivalent. One to two sentences. Never generic.\\n\\nTONE RULES (non-negotiable):\\n- Conversational. Uses em-dashes for natural pauses. Reads like a human talking, not presenting.\\n- Confident but not boastful. Self-aware about the career arc.\\n- No HR-speak: no 'passionate about', 'leverage synergies', 'results-driven', 'team player'.\\n- Numbers woven into narrative sentences, not bulleted or listed.\\n- Does not start any sentence with 'I' more than once in a row.\\n- Do NOT recite the resume chronologically. This is a story, not a timeline.",
   "preparation_checklist": [
     "string — specific things to prepare, research, or practice before the interview"
   ]
