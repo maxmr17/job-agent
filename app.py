@@ -2181,11 +2181,58 @@ if "Generate" in page:
                     unsafe_allow_html=True,
                 )
 
-        # Step 4 — Generate
+        # Step 4 — Additional Materials (optional)
         with st.container(border=True):
             st.markdown("""
             <div class="step-header">
                 <span class="step-num">4</span>
+                <span class="step-title">Additional Materials
+                    <span style="margin-left:8px;font-size:11px;font-weight:500;color:#64748b;
+                                 background:#f1f5f9;border-radius:99px;padding:2px 9px;">optional</span>
+                </span>
+            </div>
+            <div style="font-size:13px;color:#64748b;margin-bottom:14px;line-height:1.6;">
+                Paste or upload anything else that supports your candidacy — performance reviews,
+                notable project write-ups, LinkedIn About section, personal projects, awards, etc.
+                Everything here is scanned and used to strengthen your fit score, resume, cover letter,
+                and interview prep.
+            </div>
+            """, unsafe_allow_html=True)
+
+            extra_file = st.file_uploader(
+                "Upload PDF",
+                type=["pdf"],
+                label_visibility="collapsed",
+                key="extra_materials_file",
+            )
+            extra_text = st.text_area(
+                "Or paste text",
+                height=120,
+                placeholder="Paste performance review highlights, project summaries, LinkedIn About, personal projects…",
+                label_visibility="collapsed",
+                key="extra_materials_text",
+            )
+
+            additional_context = ""
+            if extra_file:
+                additional_context += extract_text_from_pdf(BytesIO(extra_file.read()))
+            if extra_text and extra_text.strip():
+                additional_context = (additional_context + "\n\n" + extra_text).strip()
+
+            if additional_context:
+                _ac_words = len(additional_context.split())
+                st.markdown(
+                    f'<div style="font-size:12.5px;color:#15803d;background:#f0fdf4;'
+                    f'border:1px solid #86efac;border-radius:8px;padding:7px 12px;margin-top:4px;">'
+                    f'✓ {_ac_words:,} words of additional context will be included.</div>',
+                    unsafe_allow_html=True,
+                )
+
+        # Step 5 — Generate
+        with st.container(border=True):
+            st.markdown("""
+            <div class="step-header">
+                <span class="step-num">5</span>
                 <span class="step-title">Generate Everything</span>
             </div>
             <div style="font-size:13px;color:#64748b;margin-bottom:16px;line-height:1.6;">
@@ -2244,6 +2291,7 @@ if "Generate" in page:
                             f'<div class="gen-progress">'
                             f'<div class="gen-progress-dot"></div>'
                             f'<div><strong>Step {len(_steps_log)} of 10</strong>'
+                            f'{"&nbsp;·&nbsp; (incl. additional materials)" if additional_context and len(_steps_log) == 1 else ""}'
                             f' &nbsp;·&nbsp; {msg}</div>'
                             f'</div>',
                             unsafe_allow_html=True,
@@ -2255,6 +2303,7 @@ if "Generate" in page:
                     job_description,
                     resume_text,
                     recruiter_profile=resolved_recruiter,
+                    additional_context=additional_context,
                     on_step=_on_step,
                 )
                 _prog.empty()

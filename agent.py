@@ -55,6 +55,7 @@ def run_agent(
     job_description: str,
     resume: str,
     recruiter_profile: str = "",
+    additional_context: str = "",
     on_step=None,
 ) -> dict:
     """
@@ -80,26 +81,33 @@ def run_agent(
         if on_step:
             on_step(msg)
 
-    # ── Phase 0: parallel extraction ──────────────────────────────────────────
-    _log("📄 Extracting resume and job intelligence…")
-    if recruiter_profile and recruiter_profile.strip():
-        resume_intel, jd_intel, recruiter_intel = _par(
-            lambda: _extract_resume(resume),
-            lambda: _extract_job_description(job_description),
-            lambda: _extract_recruiter_profile(recruiter_profile),
-        )
-    else:
-        resume_intel, jd_intel = _par(
-            lambda: _extract_resume(resume),
-            lambda: _extract_job_description(job_description),
-        )
-        recruiter_intel = None
+    # ── Phase 0: parallel extraction — all inputs scanned before generation ───
+    _log("📄 Extracting resume, job description, and supplementary materials…")
+    fns = [
+        lambda: _extract_resume(resume),
+        lambda: _extract_job_description(job_description),
+    ]
+    has_recruiter_profile = bool(recruiter_profile and recruiter_profile.strip())
+    has_additional_context = bool(additional_context and additional_context.strip())
+    if has_recruiter_profile:
+        fns.append(lambda: _extract_recruiter_profile(recruiter_profile))
+    if has_additional_context:
+        fns.append(lambda: _extract_additional_context(additional_context))
+
+    results_p0 = _par(*fns)
+    resume_intel = results_p0[0]
+    jd_intel     = results_p0[1]
+    idx = 2
+    recruiter_intel = results_p0[idx] if has_recruiter_profile else None
+    if has_recruiter_profile:
+        idx += 1
+    additional_context_intel = results_p0[idx] if has_additional_context else None
 
     # ── Phase 1: parallel fit score + analysis ────────────────────────────────
     _log("📊 Scoring fit and analyzing requirements…")
     fit_result, raw_analysis = _par(
-        lambda: _compute_fit_score(job_description, resume, jd_intel, resume_intel),
-        lambda: _generate_analysis(job_description, resume, jd_intel, resume_intel),
+        lambda: _compute_fit_score(job_description, resume, jd_intel, resume_intel, additional_context, additional_context_intel),
+        lambda: _generate_analysis(job_description, resume, jd_intel, resume_intel, additional_context, additional_context_intel),
     )
     analysis = raw_analysis
     analysis["fit_score"]    = fit_result["fit_score"]
@@ -108,18 +116,18 @@ def run_agent(
 
     # ── Phase 2: cover letter strategy ───────────────────────────────────────
     _log("🎯 Building cover letter strategy…")
-    cl_strategy  = _generate_cover_letter_strategy(job_description, resume, analysis, jd_intel)
+    cl_strategy  = _generate_cover_letter_strategy(job_description, resume, analysis, jd_intel, additional_context, additional_context_intel)
     company_name = cl_strategy.get("company_name", "the company")
 
     # ── Phase 3: parallel CL draft + recruiter analysis ──────────────────────
     _log("✍️  Drafting cover letter" + (" and analyzing recruiter profile…" if recruiter_intel else "…"))
     if recruiter_intel:
         cl_draft, recruiter_analysis = _par(
-            lambda: _generate_cover_letter(job_description, resume, analysis, cl_strategy, company_name),
+            lambda: _generate_cover_letter(job_description, resume, analysis, cl_strategy, company_name, additional_context, additional_context_intel),
             lambda: _analyze_recruiter_commonalities(recruiter_intel, resume_intel),
         )
     else:
-        cl_draft = _generate_cover_letter(job_description, resume, analysis, cl_strategy, company_name)
+        cl_draft = _generate_cover_letter(job_description, resume, analysis, cl_strategy, company_name, additional_context, additional_context_intel)
         recruiter_analysis = None
 
     # ── Phase 4: CL polish + enforce ──────────────────────────────────────────
@@ -130,7 +138,7 @@ def run_agent(
     # ── Phase 5: parallel LI strategy + analysis polish + company research ───
     _log("🔍 Building LinkedIn strategy, polishing analysis, and researching company…")
     li_strategy, polished_analysis, company_research = _par(
-        lambda: _generate_linkedin_strategy(job_description, resume, analysis, cl_strategy, recruiter_analysis),
+        lambda: _generate_linkedin_strategy(job_description, resume, analysis, cl_strategy, recruiter_analysis, additional_context, additional_context_intel),
         lambda: _improve_analysis(analysis),
         lambda: _generate_company_research(job_description, jd_intel),
     )
@@ -138,28 +146,28 @@ def run_agent(
     # ── Phase 6: parallel LI draft + resume draft ────────────────────────────
     _log("📝 Drafting LinkedIn message and tailoring resume…")
     li_draft, tailored_resume_draft = _par(
-        lambda: _generate_linkedin_message(job_description, resume, analysis, li_strategy, recruiter_analysis),
-        lambda: _generate_tailored_resume(job_description, resume, polished_analysis, cl_strategy, jd_intel, resume_intel),
+        lambda: _generate_linkedin_message(job_description, resume, analysis, li_strategy, recruiter_analysis, additional_context, additional_context_intel),
+        lambda: _generate_tailored_resume(job_description, resume, polished_analysis, cl_strategy, jd_intel, resume_intel, additional_context, additional_context_intel),
     )
 
     # ── Phase 7: parallel LI polish + resume critique ────────────────────────
     _log("🔬 Polishing LinkedIn message and critiquing resume…")
     li_final, optimization = _par(
         lambda: _polish_linkedin_message(li_draft, li_strategy, recruiter_analysis),
-        lambda: _generate_resume_optimization_prompt(job_description, resume, tailored_resume_draft, polished_analysis, jd_intel),
+        lambda: _generate_resume_optimization_prompt(job_description, resume, tailored_resume_draft, polished_analysis, jd_intel, additional_context, additional_context_intel),
     )
 
     # ── Phase 8: resume refinement ────────────────────────────────────────────
     _log("⚡ Refining resume with optimization brief…")
     tailored_resume = _refine_tailored_resume(
-        job_description, resume, tailored_resume_draft, optimization, resume_intel
+        job_description, resume, tailored_resume_draft, optimization, resume_intel, additional_context, additional_context_intel
     )
 
     # ── Phase 9: parallel fact verify + interview prep + follow-up email ──────
     _log("🛡️  Verifying accuracy, generating interview prep and follow-up email…")
     fact_check, interview_prep, follow_up_email = _par(
-        lambda: _verify_factual_accuracy(cl_final, li_final, tailored_resume, resume, resume_intel),
-        lambda: _generate_interview_prep(job_description, resume, polished_analysis, jd_intel, resume_intel),
+        lambda: _verify_factual_accuracy(cl_final, li_final, tailored_resume, resume, resume_intel, additional_context, additional_context_intel),
+        lambda: _generate_interview_prep(job_description, resume, polished_analysis, jd_intel, resume_intel, additional_context, additional_context_intel),
         lambda: _generate_follow_up_email(cl_strategy, cl_final, company_name),
     )
 
@@ -179,8 +187,9 @@ def run_agent(
         "company_research":      company_research,
         "interview_prep":        interview_prep,
         "follow_up_email":       follow_up_email,
-        "resume_intel":          resume_intel,
-        "jd_intel":              jd_intel,
+        "resume_intel":             resume_intel,
+        "jd_intel":                 jd_intel,
+        "additional_context_intel": additional_context_intel,
     }
 
 
@@ -394,6 +403,102 @@ PROFILE:
     return json.loads(response.choices[0].message.content)
 
 
+def _extract_additional_context(text: str) -> dict:
+    """
+    Deep structured extraction from any supplementary candidacy materials —
+    performance reviews, project write-ups, LinkedIn About, personal projects, etc.
+
+    Facts extracted here are treated as first-class source-of-truth alongside the
+    resume in all downstream generation and fact-verification steps.
+    """
+    response = client.chat.completions.create(
+        model="gpt-4.1",
+        response_format={"type": "json_object"},
+        temperature=0.1,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are a precision data-extraction engine. "
+                    "Extract only what is EXPLICITLY STATED in the provided materials. "
+                    "Do NOT infer, assume, or embellish anything. "
+                    "Return ONLY valid JSON."
+                ),
+            },
+            {
+                "role": "user",
+                "content": f"""
+Extract every verifiable fact from these additional candidacy materials.
+These may include performance reviews, project summaries, LinkedIn About sections,
+personal/side projects, awards, publications, or any other supporting information.
+
+Return JSON:
+{{
+  "projects": [
+    {{
+      "name": "string — project name",
+      "description": "string — what it was, your role, technologies used",
+      "outcomes": ["string — measurable results, impact, or outcomes"],
+      "skills_demonstrated": ["string"]
+    }}
+  ],
+  "performance_highlights": [
+    "string — verbatim or close paraphrase of standout feedback, ratings, commendations, or KPIs"
+  ],
+  "additional_achievements": [
+    {{
+      "raw_text": "string — verbatim quote of any metric, result, or accomplishment",
+      "context": "string — where this came from (e.g. performance review, project doc)"
+    }}
+  ],
+  "skills_and_competencies": ["string — any skills or competencies mentioned not already on resume"],
+  "bio_or_about": "string — LinkedIn About or personal bio if present",
+  "awards_and_recognition": ["string"],
+  "publications_and_speaking": ["string"],
+  "other_notable_facts": ["string — anything else that strengthens the candidacy"]
+}}
+
+MATERIALS:
+{text}
+""",
+            },
+        ],
+    )
+    return json.loads(response.choices[0].message.content)
+
+
+def _fmt_additional_ctx(intel: dict | None, raw: str = "") -> str:
+    """Format additional context intel into a compact prompt block. Returns '' if nothing."""
+    if not intel and not raw.strip():
+        return ""
+    parts = []
+    if intel:
+        projects = intel.get("projects") or []
+        if projects:
+            parts.append("Projects:\n" + json.dumps(projects, indent=2))
+        perf = intel.get("performance_highlights") or []
+        if perf:
+            parts.append("Performance highlights: " + json.dumps(perf))
+        achievements = intel.get("additional_achievements") or []
+        if achievements:
+            parts.append("Additional verified achievements:\n" + json.dumps(achievements, indent=2))
+        skills = intel.get("skills_and_competencies") or []
+        if skills:
+            parts.append("Additional skills/competencies: " + json.dumps(skills))
+        bio = intel.get("bio_or_about", "")
+        if bio:
+            parts.append(f"Bio/About: {bio}")
+        awards = intel.get("awards_and_recognition") or []
+        if awards:
+            parts.append("Awards/recognition: " + json.dumps(awards))
+        other = intel.get("other_notable_facts") or []
+        if other:
+            parts.append("Other notable facts: " + json.dumps(other))
+    if not parts and raw.strip():
+        parts.append(raw[:3000])
+    return "\nADDITIONAL CANDIDATE MATERIALS (treat as source-of-truth alongside resume):\n" + "\n".join(parts) if parts else ""
+
+
 # =============================================================================
 # PHASE 1 — FIT SCORE
 # =============================================================================
@@ -403,6 +508,8 @@ def _compute_fit_score(
     resume: str,
     jd_intel: dict,
     resume_intel: dict,
+    additional_context: str = "",
+    additional_context_intel: dict | None = None,
 ) -> dict:
     """
     Rubric-based fit score with five weighted dimensions.
@@ -450,6 +557,7 @@ CANDIDATE PROFILE:
 - Seniority: {resume_intel.get("seniority_level", "unknown")}
 - Industries: {json.dumps(resume_intel.get("industries", []))}
 - Functions: {json.dumps(resume_intel.get("functions", []))}
+{_fmt_additional_ctx(additional_context_intel, additional_context)}
 
 ROLE REQUIREMENTS:
 - Required tools: {json.dumps(jd_tools)}
@@ -528,6 +636,8 @@ def _generate_analysis(
     resume: str,
     jd_intel: dict,
     resume_intel: dict,
+    additional_context: str = "",
+    additional_context_intel: dict | None = None,
 ) -> dict:
     """
     Produce key requirements, strengths, gaps, and resume bullets.
@@ -577,6 +687,7 @@ CANDIDATE SKILLS:
 
 CAREER ARC:
 {resume_intel.get("career_arc", "")}
+{_fmt_additional_ctx(additional_context_intel, additional_context)}
 
 Return JSON:
 {{
@@ -607,6 +718,8 @@ def _generate_cover_letter_strategy(
     resume: str,
     analysis: dict,
     jd_intel: dict | None = None,
+    additional_context: str = "",
+    additional_context_intel: dict | None = None,
 ) -> dict:
     """
     Design a precise writing brief before a single word of the letter is drafted.
@@ -643,6 +756,7 @@ EXTRACTED JD SIGNALS:
 
 CANDIDATE STRENGTHS:
 {json.dumps(analysis.get("strengths", []), indent=2)}
+{_fmt_additional_ctx(additional_context_intel, additional_context)}
 
 Return JSON:
 {{
@@ -688,6 +802,8 @@ def _generate_cover_letter(
     analysis: dict,
     strategy: dict,
     company_name: str,
+    additional_context: str = "",
+    additional_context_intel: dict | None = None,
 ) -> str:
     response = client.chat.completions.create(
         model="gpt-4.1",
@@ -734,6 +850,7 @@ JOB DESCRIPTION (for reference):
 
 RESUME (for reference — only use facts from here):
 {resume}
+{_fmt_additional_ctx(additional_context_intel, additional_context)}
 """,
             },
         ],
@@ -910,6 +1027,8 @@ def _generate_linkedin_strategy(
     analysis: dict,
     cl_strategy: dict,
     recruiter_analysis: dict | None = None,
+    additional_context: str = "",
+    additional_context_intel: dict | None = None,
 ) -> dict:
     personalization_section = ""
     if recruiter_analysis and recruiter_analysis.get("top_hook"):
@@ -966,6 +1085,7 @@ JOB DESCRIPTION:
 
 CANDIDATE STRENGTHS:
 {json.dumps(analysis.get("strengths", []), indent=2)}
+{_fmt_additional_ctx(additional_context_intel, additional_context)}
 """,
             },
         ],
@@ -983,6 +1103,8 @@ def _generate_linkedin_message(
     analysis: dict,
     strategy: dict,
     recruiter_analysis: dict | None = None,
+    additional_context: str = "",
+    additional_context_intel: dict | None = None,
 ) -> str:
     personalization_block = ""
     if recruiter_analysis and recruiter_analysis.get("top_hook"):
@@ -1032,6 +1154,7 @@ RULES:
 
 JOB DESCRIPTION (reference):
 {job_description}
+{_fmt_additional_ctx(additional_context_intel, additional_context)}
 """,
             },
         ],
@@ -1222,6 +1345,8 @@ def _generate_tailored_resume(
     cl_strategy: dict,
     jd_intel: dict | None = None,
     resume_intel: dict | None = None,
+    additional_context: str = "",
+    additional_context_intel: dict | None = None,
 ) -> dict:
     """
     Rewrite the resume tailored to the specific role.
@@ -1314,6 +1439,7 @@ JOB DESCRIPTION:
 
 ORIGINAL RESUME (source of truth):
 {resume}
+{_fmt_additional_ctx(additional_context_intel, additional_context)}
 """,
             },
         ],
@@ -1331,6 +1457,8 @@ def _generate_resume_optimization_prompt(
     tailored_resume: dict,
     analysis: dict,
     jd_intel: dict | None = None,
+    additional_context: str = "",
+    additional_context_intel: dict | None = None,
 ) -> dict:
     """
     Harsh-but-constructive second-reviewer critique before the final refinement pass.
@@ -1404,6 +1532,7 @@ CURRENT TAILORED RESUME:
 
 KEY REQUIREMENTS:
 {json.dumps(analysis.get("key_requirements", []), indent=2)}
+{_fmt_additional_ctx(additional_context_intel, additional_context)}
 """,
             },
         ],
@@ -1421,6 +1550,8 @@ def _refine_tailored_resume(
     tailored_resume: dict,
     optimization: dict,
     resume_intel: dict | None = None,
+    additional_context: str = "",
+    additional_context_intel: dict | None = None,
 ) -> dict:
     """Apply the optimization brief to produce the final maximally effective resume."""
     quant_text = "\n".join(
@@ -1491,6 +1622,7 @@ Return SAME JSON structure, fully optimized:
 
 ORIGINAL RESUME (source of truth):
 {resume}
+{_fmt_additional_ctx(additional_context_intel, additional_context)}
 
 CURRENT TAILORED RESUME:
 {json.dumps(tailored_resume, indent=2)}
@@ -1514,6 +1646,8 @@ def _verify_factual_accuracy(
     tailored_resume: dict,
     resume: str,
     resume_intel: dict | None = None,
+    additional_context: str = "",
+    additional_context_intel: dict | None = None,
 ) -> dict:
     """
     Audit all AI-generated prose against the candidate's original resume.
@@ -1560,8 +1694,9 @@ def _verify_factual_accuracy(
                 "content": f"""
 Audit the cover letter and LinkedIn message for factual accuracy.
 
-ORIGINAL RESUME (only source of truth):
+ORIGINAL RESUME (primary source of truth):
 {resume}
+{_fmt_additional_ctx(additional_context_intel, additional_context)}
 
 VERIFIED QUANTIFIED ACHIEVEMENTS (authoritative numeric allowlist):
 {quant_allowlist}
@@ -1621,6 +1756,8 @@ def _generate_interview_prep(
     analysis: dict,
     jd_intel: dict,
     resume_intel: dict,
+    additional_context: str = "",
+    additional_context_intel: dict | None = None,
 ) -> dict:
     """
     Generate a complete, role-specific interview guide.
@@ -1715,6 +1852,7 @@ JOB DESCRIPTION:
 
 CANDIDATE RESUME:
 {resume}
+{_fmt_additional_ctx(additional_context_intel, additional_context)}
 """,
             },
         ],
