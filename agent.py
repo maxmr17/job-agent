@@ -738,6 +738,8 @@ def _generate_cover_letter_strategy(
                     "You are a senior executive career strategist briefing a ghostwriter. "
                     "Your job is NOT to write the letter — design the strategy FOR it. "
                     "Be specific and opinionated. Vague guidance produces generic letters. "
+                    "The candidate writes and speaks like a real human, not a LinkedIn post. "
+                    "Every piece of guidance must be concrete enough that a ghostwriter could not produce buzzword salad while following it. "
                     "Return ONLY valid JSON."
                 ),
             },
@@ -762,18 +764,18 @@ Return JSON:
 {{
   "company_name": "string — exactly as it should appear in the greeting",
   "company_culture_signals": "string — what the JD reveals about culture, tone, values",
-  "candidate_narrative_angle": "string — the single most compelling story this candidate can tell for THIS role. One sentence. Be ruthlessly specific.",
-  "opening_hook": "string — the opening SENTENCE of the letter body (after the greeting). Must convey specific measurable impact in the first 10 words. FAILURE MODES: 'With over X years of experience…', 'I am writing to express…', 'Having worked in X for Y years…'. SUCCESS: reference a concrete result, decision, or moment that is instantly relevant to what this company needs right now.",
+  "candidate_narrative_angle": "string — the single most compelling story this candidate can tell for THIS role. One sentence. Be ruthlessly specific — name the type of problem, the scale, the context.",
+  "opening_hook": "string — the EXACT opening sentence of the letter body. Rules: (1) Must name a SPECIFIC outcome, client type, metric, or moment from the resume — not a category. (2) Must be something only THIS candidate could write — not interchangeable with any other applicant. (3) Must be conversational and human — reads like someone speaking, not presenting. BANNED PATTERNS: anything starting with 'With over X years', 'I am writing to express', 'Having worked in', 'As a seasoned', 'I am passionate about', 'Throughout my career'. BANNED VOCABULARY anywhere in the hook: 'architected', 'leveraged', 'scalable solutions', 'accelerated adoption', 'measurable business outcomes', 'enterprise-grade', 'best-in-class', 'synergies'. SUCCESS EXAMPLE: 'When my team prevented $11.4M in customer churn last year by re-architecting BI solutions for 900+ clients, it proved how transformative the right analytics leadership can be — especially during periods of high-stakes change.'",
   "key_themes": [
-    "exactly 3 strings — the 3 most powerful candidate achievements tied directly to a specific challenge or phrase in the JD"
+    "exactly 3 strings — each must name a specific achievement with a number or named client/project, tied directly to a challenge stated in the JD. No generic themes like 'strong communication skills' or 'proven leadership'."
   ],
   "company_language_to_mirror": [
     "4–6 specific words or phrases taken verbatim from the JD"
   ],
-  "tone_guidance": "string — the EXACT tone to strike. Be specific: e.g. 'Confident and direct, like a peer, not an applicant. No deference. No enthusiasm-signaling.'",
+  "tone_guidance": "string — the EXACT tone to strike. Must be specific. Example: 'Direct and self-assured — writes like someone who has solved this problem before and knows it. No enthusiasm-signaling, no deference. Concrete verbs: built, prevented, rebuilt, led, shipped. Not: architected, leveraged, accelerated, championed.'",
   "length_and_format": "string — e.g. '3 tight paragraphs, under 260 words, no bullets'",
   "what_to_avoid": [
-    "specific phrases, approaches, or topics that would hurt this application"
+    "list every specific phrase, pattern, or approach that would make this letter generic or AI-sounding. Always include: 'corporate buzzwords (leveraged, architected, scalable, measurable outcomes)', 'any sentence that could appear in someone else's cover letter', 'vague claims without named evidence', 'enthusiasm-signaling phrases'"
   ]
 }}
 
@@ -813,11 +815,18 @@ def _generate_cover_letter(
                 "role": "system",
                 "content": (
                     "You are an elite ghostwriter for senior executives. "
-                    "You write cover letters that get responses — not compliments. "
+                    "You write cover letters that sound like a sharp human wrote them at midnight after a good day — "
+                    "confident, direct, specific, and completely free of corporate language. "
                     "You follow the strategy brief with surgical precision. "
-                    "You never use clichés, generic openers, or HR-speak. "
-                    "You never begin a sentence with 'I'. "
-                    "Every sentence earns its place or it's cut."
+                    "BANNED WORDS AND PHRASES (using any of these is a failure): "
+                    "'leveraged', 'architected', 'scalable', 'measurable business outcomes', "
+                    "'accelerated adoption', 'enterprise-grade', 'best-in-class', 'synergies', "
+                    "'results-driven', 'passionate about', 'excited to', 'thrilled to', "
+                    "'proven track record', 'dynamic', 'innovative', 'transformative solutions', "
+                    "'stakeholder alignment', 'cross-functional collaboration', 'thought leader'. "
+                    "Instead: use plain, concrete verbs. Name clients. Name projects. Use real numbers in real sentences. "
+                    "Write the way the candidate speaks — like someone who has done this before and doesn't need to impress anyone. "
+                    "Never begin a sentence with 'I'. Every sentence earns its place or it's cut."
                 ),
             },
             {
@@ -837,13 +846,19 @@ TOP RESUME BULLETS (use or adapt with real numbers only):
 FORMAT RULES (non-negotiable):
 - First line exactly: Hello {company_name} Recruiting Team,
 - Blank line, then body starting with the opening_hook from the brief
-- The opening hook must be the exact first sentence — do not soften or generalize it
-- Cover all 3 key_themes with specific evidence from the resume
+- The opening hook must be used EXACTLY as written — do not soften, generalize, or paraphrase it
+- Cover all 3 key_themes with named evidence: client names, project types, specific numbers
 - Weave company_language_to_mirror naturally — never force it
 - Match tone_guidance and length_and_format exactly
 - Do NOT include a subject line, date, or address block
 - Last two lines exactly: Thanks, / Max
-- Return ONLY the cover letter text
+- Return ONLY the cover letter text — no markdown, no asterisks, no formatting characters
+
+CONTENT RULES (non-negotiable):
+- Every paragraph must contain at least one concrete, specific detail: a client name, a project type, a number, or a named outcome
+- Zero tolerance for sentences that could appear in anyone else's cover letter
+- If a sentence sounds like it was generated by AI — rewrite it as plain human speech
+- The letter should read like the candidate is talking to someone they respect, not performing for an ATS
 
 JOB DESCRIPTION (for reference):
 {job_description}
@@ -871,10 +886,12 @@ def _polish_cover_letter(draft: str, strategy: dict, company_name: str) -> str:
                 "role": "system",
                 "content": (
                     "You are a ruthless editor who has reviewed 50,000 cover letters. "
-                    "You cut every word that doesn't earn its place. "
-                    "You sharpen language without adding length. "
-                    "You make prose feel human, confident, and specific — never like AI output. "
-                    "You never soften strong opening hooks."
+                    "You can smell corporate buzzwords from a mile away and you cut them on sight. "
+                    "You make prose feel like a real, sharp human wrote it — specific, direct, confident. "
+                    "You never soften strong opening hooks. "
+                    "You never allow vague sentences that could appear in anyone else's letter. "
+                    "Your standard: every sentence must be so specific that removing the candidate's name "
+                    "would make it obviously wrong for any other person."
                 ),
             },
             {
@@ -890,17 +907,19 @@ STRATEGY BRIEF:
 
 EDITS MUST:
 1. Sharpen every sentence — cut anything that doesn't move the narrative forward
-2. Preserve the opening hook EXACTLY — do not water it down
-3. Ensure all 3 key themes land with specific evidence, not vague claims
-4. Eliminate any residual HR-speak, enthusiasm-signaling, or passive voice
-5. Confirm tone matches the brief exactly
-6. Ask: "Does this sound like a confident human peer or an AI job applicant?" Fix anything that sounds like the latter
+2. Preserve the opening hook EXACTLY — do not change a single word
+3. Ensure all 3 key themes land with named, specific evidence (client name, project, number) — not vague claims
+4. Hunt and destroy every buzzword: 'leveraged', 'architected', 'scalable', 'measurable outcomes', 'accelerated adoption', 'enterprise-grade', 'best-in-class', 'results-driven', 'passionate', 'excited', 'thrilled', 'transformative solutions', 'cross-functional', 'stakeholder alignment'. Replace each with a plain, concrete, human alternative.
+5. Eliminate any sentence that could appear in someone else's cover letter — rewrite it with a specific detail
+6. Eliminate passive voice, enthusiasm-signaling, and deference
+7. Final read: does this sound like a confident human talking to someone they respect? If not, fix it.
+8. Ensure there is no markdown formatting in the output: no asterisks, no backticks, no brackets used as formatting
 
 PRESERVE EXACTLY:
 - First line: Hello {company_name} Recruiting Team,
 - Last two lines: Thanks, / Max
 
-Return ONLY the final polished letter.
+Return ONLY the final polished letter. Plain text only — no markdown.
 
 DRAFT:
 {draft}

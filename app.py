@@ -5,6 +5,18 @@ import html
 import json
 import re
 from io import BytesIO
+
+
+def _safe_html(text: str) -> str:
+    """Escape HTML entities AND markdown-sensitive characters so st.markdown never renders formatting."""
+    text = html.escape(text)          # handles < > & " '
+    text = text.replace('`', '&#96;')  # inline code spans
+    text = text.replace('*', '&#42;')  # bold / italic
+    text = text.replace('_', '&#95;')  # italic / underscore
+    text = text.replace('[', '&#91;')  # link / reference starts
+    text = text.replace(']', '&#93;')  # link / reference ends
+    text = text.replace('#', '&#35;')  # headings
+    return text
 from urllib.parse import quote_plus
 import streamlit as st
 import pandas as pd
@@ -1593,7 +1605,7 @@ def render_result(result: dict, key_suffix: str = "") -> None:
             st.markdown(
                 f'<div class="section-card section-card-indigo" style="font-size:14px;line-height:1.85;'
                 f'color:#1e293b;white-space:pre-wrap;font-family:inherit;">'
-                f'{html.escape(cover_letter)}</div>',
+                f'{_safe_html(cover_letter)}</div>',
                 unsafe_allow_html=True,
             )
 
