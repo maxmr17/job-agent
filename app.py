@@ -1258,11 +1258,13 @@ def render_fit_score(result: dict) -> None:
     bar_pct = score * 10
 
     DIMENSIONS = [
-        ("must_have_requirements",  "Must-Have Requirements", 0.35),
-        ("technical_skill_overlap", "Technical Skill Overlap", 0.25),
-        ("years_and_seniority",     "Years & Seniority",      0.20),
-        ("leadership_and_scope",    "Leadership & Scope",     0.10),
-        ("domain_and_industry_fit", "Domain & Industry Fit",  0.10),
+        ("must_have_requirements",  "Must-Have Requirements",  0.30),
+        ("technical_skill_overlap", "Technical Skill Overlap", 0.20),
+        ("responsibilities_match",  "Responsibilities Match",  0.15),
+        ("years_and_seniority",     "Years & Seniority",       0.15),
+        ("demonstrated_impact",     "Demonstrated Impact",     0.10),
+        ("leadership_and_scope",    "Leadership & Scope",      0.05),
+        ("domain_and_industry_fit", "Domain & Industry Fit",   0.05),
     ]
 
     _circ = 263.9  # 2π × r=42
@@ -1312,7 +1314,7 @@ def render_fit_score(result: dict) -> None:
         <div style="flex:1;">
             <div class="fit-label" style="color:{color};margin-bottom:6px;">{label}</div>
             <div style="font-size:12px;color:{color}bb;font-weight:500;line-height:1.6;">
-                Scored across 5 weighted dimensions
+                Scored across 7 weighted dimensions
             </div>
         </div>
     </div>
@@ -1336,7 +1338,7 @@ def render_fit_score(result: dict) -> None:
                 st.markdown(
                     f'<div style="display:flex;align-items:center;gap:12px;'
                     f'padding:10px 0;border-bottom:1px solid #f1f5f9;">'
-                    f'<div style="width:180px;font-size:13px;font-weight:600;color:#334155;flex-shrink:0;">'
+                    f'<div style="width:190px;font-size:13px;font-weight:600;color:#334155;flex-shrink:0;">'
                     f'{dim_label}</div>'
                     f'<div style="width:36px;font-size:15px;font-weight:800;color:{dc};flex-shrink:0;">'
                     f'{dim_score}</div>'
@@ -1350,10 +1352,48 @@ def render_fit_score(result: dict) -> None:
                 )
                 if dim.get("rationale"):
                     st.markdown(
-                        f'<div style="font-size:12px;color:#64748b;padding:4px 0 10px 228px;">'
+                        f'<div style="font-size:12px;color:#64748b;padding:4px 0 10px 238px;">'
                         f'{dim["rationale"]}</div>',
                         unsafe_allow_html=True,
                     )
+
+            # Must-have checklist
+            checklist = result.get("must_have_checklist") or []
+            if checklist:
+                st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+                _section_label("Must-Have Requirement Checklist")
+                for item in checklist:
+                    sat   = item.get("satisfied", False)
+                    icon  = "✓" if sat else "✕"
+                    ic    = "#15803d" if sat else "#dc2626"
+                    ibg   = "#f0fdf4" if sat else "#fef2f2"
+                    ibdr  = "#86efac" if sat else "#fecaca"
+                    evid  = item.get("evidence") or ""
+                    req   = html.escape(item.get("requirement", ""))
+                    evid_html = f'<div style="font-size:11px;color:#64748b;margin-top:2px;">{html.escape(evid)}</div>' if evid else ""
+                    st.markdown(
+                        f'<div style="display:flex;gap:10px;align-items:flex-start;'
+                        f'background:{ibg};border:1px solid {ibdr};border-radius:8px;'
+                        f'padding:8px 12px;margin-bottom:5px;">'
+                        f'<span style="color:{ic};font-weight:700;font-size:13px;flex-shrink:0;">{icon}</span>'
+                        f'<div><div style="font-size:13px;color:#1e293b;">{req}</div>{evid_html}</div>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+
+            # Gaps
+            gaps = result.get("gaps") or []
+            if gaps:
+                st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+                _section_label("Key Gaps")
+                st.markdown(_bullet_html(gaps, dot="△", dot_color="#f59e0b"), unsafe_allow_html=True)
+
+            # Nice-to-have hits
+            nth = result.get("nice_to_have_hits") or []
+            if nth:
+                st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+                _section_label("Nice-to-Have Coverage")
+                st.markdown(_bullet_html(nth, dot="✓", dot_color="#15803d"), unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

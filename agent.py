@@ -110,9 +110,12 @@ def run_agent(
         lambda: _generate_analysis(job_description, resume, jd_intel, resume_intel, additional_context, additional_context_intel),
     )
     analysis = raw_analysis
-    analysis["fit_score"]    = fit_result["fit_score"]
-    analysis["fit_scoring"]  = fit_result["scoring"]
-    analysis["fit_rationale"] = fit_result.get("fit_rationale", "")
+    analysis["fit_score"]          = fit_result["fit_score"]
+    analysis["fit_scoring"]        = fit_result["scoring"]
+    analysis["fit_rationale"]      = fit_result.get("fit_rationale", "")
+    analysis["must_have_checklist"] = fit_result.get("must_have_checklist", [])
+    analysis["gaps"]               = fit_result.get("gaps", analysis.get("gaps", []))
+    analysis["nice_to_have_hits"]  = fit_result.get("nice_to_have_hits", [])
 
     # ── Phase 2: cover letter strategy ───────────────────────────────────────
     _log("🎯 Building cover letter strategy…")
@@ -512,93 +515,164 @@ def _compute_fit_score(
     additional_context_intel: dict | None = None,
 ) -> dict:
     """
-    Rubric-based fit score with five weighted dimensions.
+    Rubric-based fit score across 7 weighted dimensions.
 
-    Python re-computes the weighted average as a safeguard against model arithmetic.
-    Low temperature (0.2) keeps scoring consistent across runs.
+    Key design decisions:
+    - Model evaluates each must-have requirement individually (checklist) before
+      scoring, eliminating gestalt estimation on the most important dimension.
+    - Two new dimensions capture what the original rubric missed: how well the
+      candidate's actual work history maps to the role's key responsibilities
+      (responsibilities_match), and whether their demonstrated impact is at the
+      right scale (demonstrated_impact).
+    - Nice-to-haves are surfaced separately as a non-weighted bonus signal.
+    - Python recomputes the weighted average; model arithmetic is not trusted.
+    - Temperature 0.1 for maximum consistency across runs.
     """
-    must_haves      = jd_intel.get("must_have_requirements", [])
-    jd_tools        = jd_intel.get("required_skills", {}).get("tools_and_platforms", [])
+    must_haves           = jd_intel.get("must_have_requirements", [])
+    nice_to_haves        = jd_intel.get("nice_to_have_requirements", [])
+    key_responsibilities = jd_intel.get("key_responsibilities", [])
+    success_metrics      = jd_intel.get("success_metrics", [])
+    jd_tools             = jd_intel.get("required_skills", {}).get("tools_and_platforms", [])
+    jd_domain            = jd_intel.get("required_skills", {}).get("domain", [])
+
     candidate_tools = (
         resume_intel.get("skills", {}).get("tools_and_platforms", [])
         + resume_intel.get("skills", {}).get("technical", [])
     )
+    candidate_domain       = resume_intel.get("skills", {}).get("domain", [])
+    candidate_methodologies = resume_intel.get("skills", {}).get("methodologies", [])
+
+    quant_text = "\n".join(
+        f"  • [{a.get('company','')}] {a.get('raw_text','')}"
+        for a in resume_intel.get("quantified_achievements", [])
+    ) or "  (none extracted)"
+
+    exp_summary = []
+    for exp in resume_intel.get("experience", [])[:5]:
+        for role in (exp.get("roles") or [])[:2]:
+            exp_summary.append(
+                f"{role.get('title','')} at {exp.get('company','')} ({role.get('dates','')})"
+            )
 
     response = client.chat.completions.create(
         model="gpt-4.1",
         response_format={"type": "json_object"},
-        temperature=0.2,
+        temperature=0.1,
         messages=[
             {
                 "role": "system",
                 "content": (
                     "You are a senior technical recruiter scoring candidate–role fit. "
-                    "You are calibrated and honest — you do NOT inflate scores. "
-                    "A 10 means near-perfect match on every hard requirement. "
-                    "A 5 means relevant background but significant gaps remain. "
-                    "A 3 or below means fundamental misalignment on hard requirements. "
-                    "Score each dimension INDEPENDENTLY before computing the weighted final. "
-                    "Return ONLY valid JSON."
+                    "You are calibrated, honest, and consistent — you never inflate scores. "
+                    "\n\nCALIBRATION ANCHORS:\n"
+                    "- 9–10: Meets ALL must-haves with direct demonstrated experience, "
+                    "strong tool overlap, ideal seniority, and has done work nearly identical to this role.\n"
+                    "- 7–8: Meets most must-haves, clear transferable experience, seniority aligned, "
+                    "minor gaps that are easily bridged.\n"
+                    "- 5–6: Relevant background but 2–3 notable gaps in hard requirements or "
+                    "meaningful seniority mismatch.\n"
+                    "- 3–4: Significant gaps across multiple must-haves; adjacent but not ready.\n"
+                    "- 1–2: Fundamental misalignment — wrong function, level, or domain.\n"
+                    "\nScore each dimension INDEPENDENTLY. Do NOT let a strong overall impression "
+                    "inflate individual dimension scores. Return ONLY valid JSON."
                 ),
             },
             {
                 "role": "user",
                 "content": f"""
-Score this candidate against the role using the rubric below.
+Score this candidate against the role.
 
-EXTRACTED MUST-HAVE REQUIREMENTS (from JD):
+STEP 1 — MUST-HAVE CHECKLIST (do this first, before scoring):
+For each requirement below, state whether the candidate satisfies it (true/false)
+and cite specific evidence from the resume. Be strict: adjacent or implied experience
+does NOT count as satisfied.
+
+MUST-HAVE REQUIREMENTS:
 {json.dumps(must_haves, indent=2)}
 
-CANDIDATE TOOLS & SKILLS (from resume):
-{json.dumps(candidate_tools, indent=2)}
+NICE-TO-HAVE REQUIREMENTS (for bonus signal only — do not inflate must-have scores):
+{json.dumps(nice_to_haves, indent=2)}
 
-CANDIDATE PROFILE:
-- Years of experience: {resume_intel.get("total_years_experience", "unknown")}
-- Seniority: {resume_intel.get("seniority_level", "unknown")}
-- Industries: {json.dumps(resume_intel.get("industries", []))}
-- Functions: {json.dumps(resume_intel.get("functions", []))}
+STEP 2 — CANDIDATE PROFILE:
+Experience history (most recent first):
+{json.dumps(exp_summary, indent=2)}
+
+Verified quantified achievements:
+{quant_text}
+
+Tools & technologies: {json.dumps(candidate_tools)}
+Domain skills: {json.dumps(candidate_domain)}
+Methodologies: {json.dumps(candidate_methodologies)}
+Career arc: {resume_intel.get("career_arc", "")}
+Years of experience: {resume_intel.get("total_years_experience", "unknown")}
+Seniority: {resume_intel.get("seniority_level", "unknown")}
+Industries: {json.dumps(resume_intel.get("industries", []))}
 {_fmt_additional_ctx(additional_context_intel, additional_context)}
 
-ROLE REQUIREMENTS:
-- Required tools: {json.dumps(jd_tools)}
-- Expected seniority: {jd_intel.get("seniority_level", "unknown")}
-- Industry: {jd_intel.get("industry", "unknown")}
+STEP 3 — ROLE REQUIREMENTS:
+Key responsibilities (what this person actually does day-to-day):
+{json.dumps(key_responsibilities, indent=2)}
 
-RUBRIC (score each 1–10 independently):
+What success looks like in this role:
+{json.dumps(success_metrics, indent=2)}
 
-1. must_have_requirements (weight 0.35)
-   — Does the candidate's DEMONSTRATED experience satisfy each hard requirement?
-     Deduct 2+ points per unchecked must-have. No credit for adjacent or implied experience.
+Required tools/tech: {json.dumps(jd_tools)}
+Required domain skills: {json.dumps(jd_domain)}
+Expected seniority: {jd_intel.get("seniority_level", "unknown")}
+Industry: {jd_intel.get("industry", "unknown")}
 
-2. technical_skill_overlap (weight 0.25)
-   — What share of the JD's specific tools/technologies appear in the candidate's profile?
-     Score proportionally (e.g. 6 of 10 tools present = ~6/10).
+STEP 4 — SCORE 7 DIMENSIONS (each 1–10, independently):
 
-3. years_and_seniority (weight 0.20)
-   — Does total relevant experience and seniority level match the role's requirements?
-     Penalise if under- OR significantly over-qualified.
+1. must_have_requirements (weight 0.30)
+   Score derived directly from your checklist above.
+   Proportion met × 10, then adjust ±1 for depth/quality of evidence.
+   Hard rule: a single unmet critical requirement caps this dimension at 7.
 
-4. leadership_and_scope (weight 0.10)
-   — Does demonstrated team size, budget ownership, and org influence match the role?
+2. technical_skill_overlap (weight 0.20)
+   What share of the JD's specific tools/technologies appear in the candidate's profile?
+   Score proportionally. Partial familiarity (mentioned but not central to any role) = 0.5 credit per tool.
+   If nice-to-have tools are also present, note them but do not inflate the score above what hard requirements justify.
 
-5. domain_and_industry_fit (weight 0.10)
-   — Does the candidate's industry and domain background align with the company's context?
+3. responsibilities_match (weight 0.15)
+   How well does the candidate's actual day-to-day work history map to the key responsibilities above?
+   Have they DONE this kind of work — not just had the skills — at comparable scope and complexity?
+   Transferable responsibilities from different industries count if the work is substantively similar.
 
-RULES:
-- Score each dimension before computing the weighted final.
-- Round final to the nearest integer. Do not round up to flatter the candidate.
+4. years_and_seniority (weight 0.15)
+   Does total RELEVANT experience and seniority level match role requirements?
+   Penalise if under- OR significantly over-qualified (overqualified candidates often churn or underperform).
+   Relevant experience = roles where the core function matches, not just industry.
+
+5. demonstrated_impact (weight 0.10)
+   Do the candidate's verified achievements show impact at the scale this role demands?
+   Use the success_metrics and quantified achievements as the benchmark.
+   Vague achievements without metrics score lower than specific, measurable ones.
+
+6. leadership_and_scope (weight 0.05)
+   Does demonstrated team size, budget ownership, and org influence match what this role requires?
+
+7. domain_and_industry_fit (weight 0.05)
+   Does the candidate's industry and domain background transfer to this company's context?
+   Transferable domain knowledge counts even across industries.
 
 Return JSON:
 {{
+  "must_have_checklist": [
+    {{"requirement": "string", "satisfied": true, "evidence": "specific quote or paraphrase from resume, or null if not met"}}
+  ],
   "scoring": {{
-    "must_have_requirements":  {{"score": 1-10, "rationale": "1 sentence"}},
-    "technical_skill_overlap": {{"score": 1-10, "rationale": "1 sentence"}},
-    "years_and_seniority":     {{"score": 1-10, "rationale": "1 sentence"}},
-    "leadership_and_scope":    {{"score": 1-10, "rationale": "1 sentence"}},
-    "domain_and_industry_fit": {{"score": 1-10, "rationale": "1 sentence"}}
+    "must_have_requirements":  {{"score": 1-10, "rationale": "1 specific sentence citing checklist results"}},
+    "technical_skill_overlap": {{"score": 1-10, "rationale": "1 specific sentence"}},
+    "responsibilities_match":  {{"score": 1-10, "rationale": "1 specific sentence citing role history"}},
+    "years_and_seniority":     {{"score": 1-10, "rationale": "1 specific sentence"}},
+    "demonstrated_impact":     {{"score": 1-10, "rationale": "1 specific sentence citing an achievement"}},
+    "leadership_and_scope":    {{"score": 1-10, "rationale": "1 specific sentence"}},
+    "domain_and_industry_fit": {{"score": 1-10, "rationale": "1 specific sentence"}}
   }},
-  "fit_score": "weighted integer 1-10",
-  "fit_rationale": "2 sentences: what drives the score up and what holds it back"
+  "gaps": ["plain-language description of each unmet must-have requirement"],
+  "nice_to_have_hits": ["each nice-to-have the candidate satisfies, with brief evidence"],
+  "fit_score": "weighted integer 1-10 — computed by you as a sanity check; Python will recompute",
+  "fit_rationale": "2–3 sentences: what makes this candidate competitive for the role, and what specifically holds the score back"
 }}
 
 JOB DESCRIPTION:
@@ -613,11 +687,13 @@ RESUME:
     data = json.loads(response.choices[0].message.content)
 
     weights = {
-        "must_have_requirements":  0.35,
-        "technical_skill_overlap": 0.25,
-        "years_and_seniority":     0.20,
-        "leadership_and_scope":    0.10,
-        "domain_and_industry_fit": 0.10,
+        "must_have_requirements":  0.30,
+        "technical_skill_overlap": 0.20,
+        "responsibilities_match":  0.15,
+        "years_and_seniority":     0.15,
+        "demonstrated_impact":     0.10,
+        "leadership_and_scope":    0.05,
+        "domain_and_industry_fit": 0.05,
     }
     scoring  = data.get("scoring", {})
     weighted = sum(
